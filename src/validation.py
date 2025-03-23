@@ -100,12 +100,26 @@ class ResultsValidator:
                 results_df = self.load_results()
             except FileNotFoundError:
                 print("No results file found. Run the pipeline first.")
-                return None
+                return None, None
         
         # Get the validation dataset
         validation_df = self.validation_dataset.get_validation_df()
         
-        # Convert dates to strings for comparison
+        # Check if required columns exist
+        required_columns = ['confrontation_dates', 'aggressor', 'victim', 'fatality_min', 'fatality_max']
+        
+        # Add missing columns with default values
+        for col in required_columns:
+            if col not in results_df.columns:
+                print(f"Warning: Required column '{col}' missing in results. Adding with default values.")
+                if col in ['fatality_min', 'fatality_max']:
+                    results_df[col] = 0
+                elif col in ['confrontation_dates']:
+                    results_df[col] = ""
+                else:
+                    results_df[col] = "Unknown"
+        
+        # Convert dates to strings for comparison if present
         if 'confrontation_dates' in results_df.columns:
             results_df['confrontation_dates'] = results_df['confrontation_dates'].astype(str)
         
@@ -120,22 +134,33 @@ class ResultsValidator:
             known_victim = known_conflict['victim']
             known_fatalities = known_conflict['fatalities']
             
-            # Check if the conflict was found
-            found_conflicts = results_df[
-                (results_df['confrontation_dates'].str.contains(known_date, na=False)) |
-                ((results_df['aggressor'] == known_aggressor) & 
-                 (results_df['victim'] == known_victim))
-            ]
+            # Default values for validation metrics
+            found = False
+            correct_aggressor = False
+            correct_victim = False
+            fatality_min = 0
+            fatality_max = 0
+            fatality_in_range = False
             
-            # Calculate metrics
-            found = len(found_conflicts) > 0
-            correct_aggressor = found and any(found_conflicts['aggressor'] == known_aggressor)
-            correct_victim = found and any(found_conflicts['victim'] == known_victim)
-            fatality_min = found_conflicts['fatality_min'].max() if found else 0
-            fatality_max = found_conflicts['fatality_max'].max() if found else 0
-            
-            # Check if fatality range includes the known value
-            fatality_in_range = found and (fatality_min <= known_fatalities <= fatality_max)
+            # Check if the conflict was found (only if confrontation_dates column exists)
+            if 'confrontation_dates' in results_df.columns and 'aggressor' in results_df.columns and 'victim' in results_df.columns:
+                found_conflicts = results_df[
+                    (results_df['confrontation_dates'].str.contains(known_date, na=False, regex=False)) |
+                    ((results_df['aggressor'] == known_aggressor) & 
+                     (results_df['victim'] == known_victim))
+                ]
+                
+                # Calculate metrics
+                found = len(found_conflicts) > 0
+                correct_aggressor = found and any(found_conflicts['aggressor'] == known_aggressor)
+                correct_victim = found and any(found_conflicts['victim'] == known_victim)
+                
+                if found and 'fatality_min' in found_conflicts.columns and 'fatality_max' in found_conflicts.columns:
+                    fatality_min = found_conflicts['fatality_min'].max() if found else 0
+                    fatality_max = found_conflicts['fatality_max'].max() if found else 0
+                    
+                    # Check if fatality range includes the known value
+                    fatality_in_range = found and (fatality_min <= known_fatalities <= fatality_max)
             
             # Add to validation results
             validation_results.append({
@@ -155,10 +180,10 @@ class ResultsValidator:
         validation_results_df = pd.DataFrame(validation_results)
         
         # Calculate summary metrics
-        recall = validation_results_df['found'].mean()
-        aggressor_accuracy = validation_results_df['correct_aggressor'].mean()
-        victim_accuracy = validation_results_df['correct_victim'].mean()
-        fatality_accuracy = validation_results_df['fatality_in_range'].mean()
+        recall = validation_results_df['found'].mean() if len(validation_results_df) > 0 else 0
+        aggressor_accuracy = validation_results_df['correct_aggressor'].mean() if len(validation_results_df) > 0 else 0
+        victim_accuracy = validation_results_df['correct_victim'].mean() if len(validation_results_df) > 0 else 0
+        fatality_accuracy = validation_results_df['fatality_in_range'].mean() if len(validation_results_df) > 0 else 0
         
         # Overall F1 score (harmonic mean of recall and precision)
         # Note: We can't compute true precision without manual verification of all extracted events
@@ -179,6 +204,10 @@ class ResultsValidator:
         """Print a validation report."""
         if validation_results is None or summary is None:
             validation_results, summary = self.validate()
+            
+        if validation_results is None or summary is None:
+            print("Validation failed. No results to report.")
+            return None, None
         
         print("\n=== Validation Report ===")
         print(f"Recall (% of known conflicts found): {summary['recall']:.2%}")
@@ -194,5 +223,10 @@ class ResultsValidator:
         print(validation_results[['date', 'aggressor', 'victim', 'known_fatalities', 
                                  'found', 'correct_aggressor', 'correct_victim',
                                  'extracted_fatality_min', 'extracted_fatality_max']])
+        
+        # Save validation results to file
+        validation_file = os.path.join(self.config.OUTPUT_DIR, "validation_results.csv")
+        validation_results.to_csv(validation_file, index=False)
+        print(f"\nValidation results saved to {validation_file}")
         
         return validation_results, summary 

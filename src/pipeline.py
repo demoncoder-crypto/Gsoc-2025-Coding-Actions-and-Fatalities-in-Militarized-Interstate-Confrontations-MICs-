@@ -73,26 +73,48 @@ class MICPipeline:
     
     def save_results(self, results_df):
         """Save the pipeline results to a CSV file."""
-        # Select and rename columns for the final output
-        output_df = results_df[[
+        # Ensure required columns exist
+        required_columns = [
             'year', 'source_file', 'title', 'date', 
             'countries_mentioned', 'aggressor_country', 'victim_country',
             'event_dates', 'fatality_min', 'fatality_max'
-        ]].copy()
+        ]
+        
+        # Check for missing columns and add them with default values
+        for col in required_columns:
+            if col not in results_df.columns:
+                print(f"Warning: Column '{col}' missing in results. Adding with default values.")
+                if col in ['fatality_min', 'fatality_max']:
+                    results_df[col] = 0
+                elif col in ['countries_mentioned', 'event_dates']:
+                    results_df[col] = [[] for _ in range(len(results_df))]
+                else:
+                    results_df[col] = "Unknown"
+        
+        # Select and rename columns for the final output
+        output_columns = [col for col in required_columns if col in results_df.columns]
+        output_df = results_df[output_columns].copy()
         
         # Rename columns for clarity
-        output_df = output_df.rename(columns={
+        column_renames = {
             'date': 'article_date',
             'aggressor_country': 'aggressor',
             'victim_country': 'victim',
             'event_dates': 'confrontation_dates'
-        })
+        }
+        
+        # Only rename columns that exist
+        rename_dict = {k: v for k, v in column_renames.items() if k in output_df.columns}
+        if rename_dict:
+            output_df = output_df.rename(columns=rename_dict)
         
         # Convert list columns to string for CSV export
         for col in ['countries_mentioned', 'confrontation_dates']:
-            output_df[col] = output_df[col].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
+            if col in output_df.columns:
+                output_df[col] = output_df[col].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
         
         # Save to CSV
+        os.makedirs(os.path.dirname(self.config.RESULTS_FILE), exist_ok=True)
         output_df.to_csv(self.config.RESULTS_FILE, index=False)
         print(f"Results saved to {self.config.RESULTS_FILE}")
         
@@ -102,21 +124,25 @@ class MICPipeline:
         """Generate summary statistics from the results."""
         stats = {}
         
-        # Count by year
-        stats['count_by_year'] = results_df['year'].value_counts().to_dict()
+        # Count by year (if exists)
+        if 'year' in results_df.columns:
+            stats['count_by_year'] = results_df['year'].value_counts().to_dict()
         
-        # Count by aggressor country
-        stats['count_by_aggressor'] = results_df['aggressor_country'].value_counts().to_dict()
+        # Count by aggressor country (if exists)
+        if 'aggressor_country' in results_df.columns:
+            stats['count_by_aggressor'] = results_df['aggressor_country'].value_counts().to_dict()
         
-        # Count by victim country
-        stats['count_by_victim'] = results_df['victim_country'].value_counts().to_dict()
+        # Count by victim country (if exists)
+        if 'victim_country' in results_df.columns:
+            stats['count_by_victim'] = results_df['victim_country'].value_counts().to_dict()
         
         # Total fatalities (using max range)
-        stats['total_fatalities_min'] = results_df['fatality_min'].sum()
-        stats['total_fatalities_max'] = results_df['fatality_max'].sum()
-        
-        # Average fatalities per incident
-        stats['avg_fatalities_min'] = results_df['fatality_min'].mean()
-        stats['avg_fatalities_max'] = results_df['fatality_max'].mean()
+        if 'fatality_min' in results_df.columns and 'fatality_max' in results_df.columns:
+            stats['total_fatalities_min'] = results_df['fatality_min'].sum()
+            stats['total_fatalities_max'] = results_df['fatality_max'].sum()
+            
+            # Average fatalities per incident
+            stats['avg_fatalities_min'] = results_df['fatality_min'].mean()
+            stats['avg_fatalities_max'] = results_df['fatality_max'].mean()
         
         return stats 
