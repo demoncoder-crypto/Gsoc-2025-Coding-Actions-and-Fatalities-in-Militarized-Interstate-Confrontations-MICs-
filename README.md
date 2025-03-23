@@ -96,7 +96,3 @@ The system combines rule-based components with transformer models to achieve hig
 ## Training
 
 While the current implementation relies primarily on pre-trained models and rule-based components, it includes functionality for fine-tuning models with labeled data if available.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details. 
