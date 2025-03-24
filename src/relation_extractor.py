@@ -174,6 +174,10 @@ class RelationExtractor:
             if pattern.search(event_text):
                 matches.append((country1, country2))
         
+        # If no matches found, return None for both
+        if not matches:
+            return None, None
+        
         # Count matches to determine most likely aggressor and victim
         aggressor_counts = {}
         victim_counts = {}
@@ -187,9 +191,9 @@ class RelationExtractor:
         victim_country = max(victim_counts.items(), key=lambda x: x[1])[0] if victim_counts else None
         
         # Make sure aggressor and victim aren't the same
-        if aggressor_country == victim_country:
+        if aggressor_country == victim_country and aggressor_country is not None:
             # If they're the same, use the one with higher count
-            if aggressor_counts[aggressor_country] > victim_counts[victim_country]:
+            if aggressor_counts.get(aggressor_country, 0) > victim_counts.get(victim_country, 0):
                 victim_country = None
             else:
                 aggressor_country = None

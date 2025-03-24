@@ -36,8 +36,8 @@ class EventExtractor:
     
     def train(self, train_texts, train_labels):
         """Train the event extractor model."""
-        # Note: In a real implementation, we would fine-tune a model for this task
-        # For simplicity, we'll use a rule-based approach combined with pre-trained models
+        # Note: In a real implementation, I would recomend fine-tuning this model for this task
+        # For simplicity, I will use a rule-based approach combined with pre-trained models
         pass
     
     def load_model(self):

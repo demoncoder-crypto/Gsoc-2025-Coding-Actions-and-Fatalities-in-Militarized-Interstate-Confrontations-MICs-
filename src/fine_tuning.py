@@ -205,7 +205,7 @@ class FineTuner:
             )
             
             # Simplistic approach for demonstration
-            # In a real implementation, you would align word-level labels with token-level
+            # In a real implementation, I would recommend aligning word-level labels with token-level
             tokenized_inputs["labels"] = [
                 [label_to_id.get(tag, 0) for tag in example_tags]
                 for example_tags in examples["tags"]
