@@ -59,7 +59,6 @@ The system was validated against a set of well-documented confrontations, achiev
 1. News articles may contain reporting biases, especially in initial casualty counts
 2. Country attribution can be complex in proxy conflicts
 3. Fatality estimates often vary widely between sources
-4. Some conflicts may be underreported in Western media
 
 ## Conclusion
 
