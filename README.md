@@ -33,41 +33,6 @@ The system implements a multi-stage pipeline:
 
 The implementation uses RoBERTa-large as the base model, with specialized components for each stage of the pipeline.
 
-## Requirements
-
-```
-transformers>=4.30.0
-torch>=2.0.0
-pandas>=1.5.0
-numpy>=1.23.0
-spacy>=3.6.0
-scikit-learn>=1.2.0
-tqdm>=4.65.0
-nltk>=3.8.1
-seaborn>=0.12.0
-matplotlib>=3.7.0
-pytorch-lightning>=2.0.0
-```
-
-## Usage
-
-1. Install dependencies:
-   ```
-   pip install -r src/requirements.txt
-   ```
-
-2. Run the pipeline:
-   ```
-   python src/main.py
-   ```
-
-3. Optional arguments:
-   ```
-   --years YEARS [YEARS ...] - Specific years to analyze
-   --output OUTPUT - Output file path
-   --stats - Generate summary statistics
-   --verbose - Print detailed progress
-   ```
 
 ## Output Format
 
@@ -84,14 +49,6 @@ The output CSV file contains the following columns:
 - `fatality_min` - Minimum number of fatalities
 - `fatality_max` - Maximum number of fatalities
 
-## Performance
-
-The system combines rule-based components with transformer models to achieve high precision in identifying military fatalities in interstate confrontations. The approach allows for:
-
-- Efficient filtering of non-relevant articles
-- Accurate entity and event extraction
-- Robust determination of country roles
-- Reliable estimation of fatality ranges
 
 ## Training
 
