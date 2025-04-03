@@ -61,7 +61,7 @@ def main():
     # Validate results if requested
     if args.validate:
         validator = ResultsValidator()
-        validation_results, summary = validator.print_validation_report(results_df=results_df)
+        validation_results, summary = validator.print_validation_report()
         
         # Save validation results
         validation_file = os.path.join(config.OUTPUT_DIR, "validation_results.csv")

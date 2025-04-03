@@ -42,4 +42,7 @@ output/models/
 *.bin
 *.pt
 *.pth
-*.h5 
+*.h5
+
+# Virtual environment
+.venv/ 
